@@ -19,6 +19,8 @@ TODO for students:
 
 import socket
 import sys
+import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def scan_port(target, port, timeout=1.0):
@@ -33,20 +35,31 @@ def scan_port(target, port, timeout=1.0):
     Returns:
         bool: True if port is open, False otherwise
     """
-    try:
         # TODO: Create a socket
         # TODO: Set timeout
         # TODO: Try to connect to target:port
         # TODO: Close the socket
         # TODO: Return True if connection successful
 
-        pass  # Remove this and implement
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
 
-    except (socket.timeout, ConnectionRefusedError, OSError):
-        return False
+        result = s.connect_ex((target, port))
+        if result == 0:
+            banner = ""
+            try:
+                banner = s.recv(1024).decode().strip()
+            except:
+                banner = "No banner"
+            s.close()
+            return port, banner
+        s.close()
+    except:
+        pass
+    return None
 
-
-def scan_range(target, start_port, end_port):
+def scan_range(target, start_port, end_port,threads=50):
     """
     Scan a range of ports on the target host
 
@@ -67,13 +80,24 @@ def scan_range(target, start_port, end_port):
     # Hint: Loop through port range and call scan_port()
     # Hint: Consider using threading for better performance
 
-    for port in range(start_port, end_port + 1):
         # TODO: Scan this port
         # TODO: If open, add to open_ports list
         # TODO: Print progress (optional)
-        pass  # Remove this and implement
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        futures = {
+            executor.submit(scan_port, target, port): port
+            for port in range(start_port, end_port + 1)
+        }
+
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                port, banner = result
+                print(f"[OPEN] Port {port} - {banner}")
+                open_ports.append(port)
 
     return open_ports
+
 
 
 def main():
@@ -83,24 +107,28 @@ def main():
     # TODO: Call scan_range()
     # TODO: Display results
 
-    # Example usage (you should improve this):
-    if len(sys.argv) < 2:
-        print("Usage: python3 port_scanner_template.py <target>")
-        print("Example: python3 port_scanner_template.py 172.20.0.10")
+    parser = argparse.ArgumentParser(description="Simple Port Scanner")
+    parser.add_argument("--target", required=True, help="Target IP or hostname")
+    parser.add_argument("--ports", default="1-1024", help="Port range (e.g. 1-1000)")
+    parser.add_argument("--threads", type=int, default=50, help="Number of threads")
+
+    args = parser.parse_args()
+
+    try:
+        start_port, end_port = map(int, args.ports.split("-"))
+    except:
+        print("Invalid port range. Use format: start-end (e.g. 1-1000)")
         sys.exit(1)
 
-    target = sys.argv[1]
-    start_port = 1
-    end_port = 1024  # Scan first 1024 ports by default
+    print(f"[*] Starting port scan on {args.target}")
 
-    print(f"[*] Starting port scan on {target}")
-
-    open_ports = scan_range(target, start_port, end_port)
+    open_ports = scan_range(args.target, start_port, end_port, args.threads)
 
     print(f"\n[+] Scan complete!")
     print(f"[+] Found {len(open_ports)} open ports:")
     for port in open_ports:
         print(f"    Port {port}: open")
+
 
 
 if __name__ == "__main__":
