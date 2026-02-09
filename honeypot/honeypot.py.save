@@ -35,13 +35,9 @@ def handle_client(conn, addr):
     try:
         conn.sendall(SSH_BANNER)
 
-        conn.settimeout(5)
-        try:
-            data = conn.recv(1024)
-            if data:
-                logger.info(f"Data from {ip}: {data.decode(errors='ignore').strip()}")
-        except socket.timeout:
-            logger.info(f"No data received from {ip}")
+        data = conn.recv(1024)
+        if data:
+            logger.info(f"Data from {ip}: {data.decode(errors='ignore').strip()}")
 
     except Exception as e:
         logger.error(f"Error handling {ip}: {e}")
@@ -50,7 +46,6 @@ def handle_client(conn, addr):
         conn.close()
         duration = time.time() - start_time
         logger.info(f"Connection closed {ip} duration={duration:.2f}s")
-
 
 def run_honeypot():
     logger = logging.getLogger("Honeypot")
