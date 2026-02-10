@@ -1,70 +1,22 @@
-Honeypot Attack Analysis
+SSH Honeypot
 
 Overview
+This project implements a simple SSH honeypot that simulates a real SSH service and logs unauthorized access attempts. The honeypot listens for incoming SSH connections, presents a realistic SSH banner, and records all interaction data. The goal is to attract attackers, monitor their behavior, and collect security information without exposing a real system.
 
-An SSH honeypot was deployed in a Docker container and exposed on port 2222 of the host system. Several connection attempts were simulated using different usernames to imitate unauthorized access attempts. All activity was recorded by the honeypot logs.
+Features
+The honeypot simulates an SSH server and sends a realistic SSH banner when a client connects. It logs all connection attempts and records the source IP address, source port, timestamp, connection duration, and any data sent by the client. The entire honeypot runs inside a Docker container to keep it isolated from the host system.
 
+File Structure
+The honeypot directory contains the Dockerfile for container setup, honeypot.py as the main implementation, logger.py for logging support, README.md for the project description, analysis.md for attack analysis, and a logs directory where connection logs are stored.
 
-Source of Connections
+How It Works
+The honeypot listens on port 22 inside the container. Docker maps host port 2222 to the container’s port 22. When a client connects, the honeypot sends an SSH banner to appear like a real SSH service. It records the connection details, logs any data received from the client, and then closes the connection. All activity is stored in the honeypot log file.
 
-All recorded connections came from the IP address:
+Testing the Honeypot
+Attack attempts can be simulated by trying to connect to the honeypot using different usernames. The connection will close automatically because it is not a real SSH server. These attempts will still be recorded in the logs.
 
-172.20.0.1
-
-This indicates the traffic originated from the local host machine or another container on the same Docker network. This matches the simulated attack commands executed locally.
-
-Observed Behavior
-
-The honeypot detected multiple SSH connection attempts. Each connection:
-	•	Originated from the same IP address
-	•	Used different temporary source ports
-	•	Sent an SSH client banner during the handshake
-
-Example captured banner:
-
-SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.13
-
-This is the default identification string sent by an SSH client when attempting to connect to a server.
-
-
-Attack Pattern
-
-The following behavior was observed:
-
-Attempt 1
-Source IP: 172.20.0.1
-Connection duration: about 2 seconds
-No significant data sent
-
-Attempt 2
-Source IP: 172.20.0.1
-SSH client banner received
-Connection closed immediately
-
-Attempt 3
-Source IP: 172.20.0.1
-SSH client banner received
-Connection closed immediately
-
-Attempt 4
-Source IP: 172.20.0.1
-SSH client banner received
-Connection closed immediately
-
-This pattern indicates repeated login attempts, which is typical of automated SSH probing or brute-force scripts.
-
-
-Security Observations
-	•	Multiple connections from the same IP within a short time window may indicate suspicious behavior.
-	•	Repeated short connections suggest automated scanning tools.
-	•	The honeypot successfully captured connection details and SSH banners without exposing a real service.
+Logs
+All connection activity is recorded in the honeypot log file. The logs include connection attempts, any data sent by the client, and the duration of each session.
 
 Conclusion
-
-The honeypot successfully logged unauthorized SSH connection attempts. It recorded:
-	•	Source IP addresses
-	•	Connection timestamps
-	•	Connection durations
-	•	Data sent by the client
-
-The results demonstrate that the honeypot is effective at detecting and recording suspicious activity.
+This honeypot successfully simulates an SSH service, captures connection attempts, and logs attacker behavior. It provides a simple but effective way to observe unauthorized access attempts in a controlled environment.
